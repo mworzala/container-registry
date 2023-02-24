@@ -1,24 +1,18 @@
+import { router } from './routes';
+import { APIError, ResponseBuilder } from './util/response';
 
 export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	MY_BUCKET: R2Bucket;
-
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
+	store: KVNamespace;
+	dataBucket: R2Bucket;
 }
 
 export default {
-	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext
-	): Promise<Response> {
-		return new Response("Hello World!");
+	fetch: async (req: Request, env: Env): Promise<Response> => {
+		const res = await router.handle(req, env);
+		if (res instanceof APIError)
+			return res.toResponse();
+		else if (res instanceof ResponseBuilder)
+			return res.toResponse();
+		return res;
 	},
 };
