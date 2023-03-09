@@ -2,8 +2,10 @@ import { router } from './routes';
 import { APIError, ResponseBuilder } from './util/response';
 
 export interface Env {
-	store: KVNamespace;
+    BASIC_AUTH: string;
+    
 	dataBucket: R2Bucket;
+
 }
 
 export default {
