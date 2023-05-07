@@ -14,10 +14,10 @@ export async function initiateBlobUpload(req: IRequest, env: Env): Promise<Respo
 	const sessionId = crypto.randomUUID();
 	const upload = await env.dataBucket.createMultipartUpload(sessionId, {
 		customMetadata: {
-			"a": "b",
-		}
-	})
-	console.log(`New session: ${sessionId} (uploadId=${upload.uploadId})`)
+			'a': 'b',
+		},
+	});
+	console.log(`New session: ${sessionId} (uploadId=${upload.uploadId})`);
 
 	return new Response('', {
 		status: 202,
@@ -50,15 +50,15 @@ export async function chunkedBlobUpload(req: IRequest, env: Env): Promise<Respon
 	// }
 	// const [start, end] = range.split('-');
 
-	const r = req as unknown as Request
+	const r = req as unknown as Request;
 	const sessionId = req.params.uuid;
 	const uploadId = req.query._state as string;
 
-	console.log(`Chunked upload: ${sessionId} (uploadId=${uploadId})`)
+	console.log(`Chunked upload: ${sessionId} (uploadId=${uploadId})`);
 	const upload = await env.dataBucket.resumeMultipartUpload(sessionId, uploadId);
 
 	if (!r.body) {
-		console.log("NO BODY")
+		console.log('NO BODY');
 		return errors.notImplemented();
 	}
 
@@ -83,7 +83,7 @@ export async function chunkedBlobUpload(req: IRequest, env: Env): Promise<Respon
 			'Content-Length': '0',
 			'X-Content-Type-Options': 'nosniff',
 			// 'Range': `0-${end}`,
-		}
+		},
 	});
 }
 
@@ -91,28 +91,27 @@ export async function completedUpload(req: IRequest, env: Env): Promise<Response
 	if (!checkAuth(req))
 		return errors.unauthorized();
 
-	const r = req as unknown as Request
+	const r = req as unknown as Request;
 	const sessionId = req.params.uuid;
 	const uploadId = req.query._state as string;
 	const part = JSON.parse(req.query.part as string);
-	console.log("Part info: " + JSON.stringify(part));
+	console.log('Part info: ' + JSON.stringify(part));
 
 	const upload = env.dataBucket.resumeMultipartUpload(sessionId, uploadId);
-	console.log("Upload object: " + JSON.stringify(upload));
+	console.log('Upload object: ' + JSON.stringify(upload));
 	const res = await upload.complete([part]); //todo handle errors on all of these calls
 
 	console.log(`Completed upload: ${JSON.stringify(res)}`);
 
 	const digest = req.query.digest as string;
-	console.log("UPLOAD DIGEST: " + digest);
+	console.log('UPLOAD DIGEST: ' + digest);
 
 	const obj = await env.dataBucket.get(sessionId);
 	const realObj = await env.dataBucket.put(digest, obj!.body, {
 		sha256: digest.slice(7),
-	})
-	await env.dataBucket.delete(sessionId)
+	});
+	await env.dataBucket.delete(sessionId);
 	console.log(`REAL upload: ${JSON.stringify(realObj)}, ${realObj.checksums.sha256}`);
-
 
 
 	// const obj = await env.dataBucket.head(sessionId);
@@ -127,30 +126,30 @@ export async function pushManifest(req: IRequest, env: Env): Promise<Response> {
 	if (!checkAuth(req))
 		return errors.unauthorized();
 
-	const r = req as unknown as Request
+	const r = req as unknown as Request;
 	const name = req.params.name;
 	const ref = req.params.ref as string;
 
 	//todo ensure body not null
 
-	const [body1, body2] = r.body!.tee()
-	const sha256 = new crypto.DigestStream('SHA-256')
-	await body2.pipeTo(sha256)
+	const [body1, body2] = r.body!.tee();
+	const sha256 = new crypto.DigestStream('SHA-256');
+	await body2.pipeTo(sha256);
 
 	const obj = await env.dataBucket.put(`${name}/${ref}`, body1, {
-		sha256: await sha256.digest
-	})
+		sha256: await sha256.digest,
+	});
 	const hexString = [...new Uint8Array(obj.checksums.sha256!)]
 		.map(b => b.toString(16).padStart(2, '0'))
-		.join('')
+		.join('');
 	console.log(`PUT manifest: ${JSON.stringify(obj)}`);
 
 	return new Response('', {
 		status: 201,
 		headers: {
 			'Location': `/v2/${name}/manifests/${ref}`,
-			'Docker-Content-Digest': `sha256:${hexString}`
-		}
+			'Docker-Content-Digest': `sha256:${hexString}`,
+		},
 	});
 }
 

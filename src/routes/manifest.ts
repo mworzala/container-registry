@@ -7,6 +7,25 @@ const buildPath = (name: string, ref: string): string => {
 	return `${name}/manifests/${ref}`;
 };
 
+// https://github.com/opencontainers/distribution-spec/blob/main/spec.md#listing-tags
+export const ListTags = async (req: AnyRequest, env: Env): Promise<AnyResponse> => {
+	const { name } = req.params;
+	const path = buildPath(name, '');
+
+    console.log(path)
+	const result = await env.dataBucket.list({
+		prefix: path,
+	});
+
+	return resp.OK.withBody(JSON.stringify({
+		'name': name,
+        'tags': result.objects
+			.map(it => it.key.substring(it.key.lastIndexOf("/") + 1))
+			.filter(it => !it.startsWith('sha256'))
+            .sort(),
+	}));
+};
+
 // Check if a manifest exists in the registry
 // https://github.com/opencontainers/distribution-spec/blob/main/spec.md#checking-if-content-exists-in-the-registry
 export const HeadManifest = async (req: AnyRequest, env: Env): Promise<AnyResponse> => {
@@ -60,7 +79,7 @@ export const GetManifest = async (req: AnyRequest, env: Env): Promise<AnyRespons
 			...digestHeader,
 		})
 		.withBody(res.body);
-}
+};
 
 
 // Check if a manifest exists in the registry
@@ -90,20 +109,30 @@ export const PutManifest = async (req: AnyRequest, env: Env): Promise<AnyRespons
 		sha256: digest,
 		httpMetadata: {
 			contentType: req.headers.get('Content-Type') ?? 'application/vnd.docker.distribution.manifest.v2+json',
-		}
+		},
 	});
 	const obj = await env.dataBucket.put(`${name}/manifests/${digestStr}`, body4, {
 		sha256: digest,
 		httpMetadata: {
 			contentType: req.headers.get('Content-Type') ?? 'application/vnd.docker.distribution.manifest.v2+json',
-		}
+		},
 	});
 
 	//todo ensure the written size is equal to the content-length header
 
 	return resp.CREATED
 		.withHeaders({
-			"Location": "/v2/" + path,
-			"Docker-Content-Digest": hexToDigest(obj.checksums.sha256!),
+			'Location': '/v2/' + path,
+			'Docker-Content-Digest': hexToDigest(obj.checksums.sha256!),
 		});
+};
+
+export const DeleteManifest = async (req: AnyRequest, env: Env): Promise<AnyResponse> => {
+	const { name, ref } = req.params;
+	const path = buildPath(name, ref);
+
+	// Delete the object from
+	await env.dataBucket.delete(path);
+
+	return resp.ACCEPTED;
 };

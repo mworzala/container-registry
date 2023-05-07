@@ -19,7 +19,7 @@ export class APIError {
 
 	toResponse(): Response {
 		const status = this.status === -1 ? 400 : this.status;
-		const headers = this.status === 401 ? new Headers({"WWW-Authenticate": "Basic"}) : undefined;
+		const headers = this.status === 401 ? new Headers({ 'WWW-Authenticate': 'Basic' }) : undefined;
 		return new ResponseBuilder(status, undefined, headers, [this]).toResponse();
 	}
 
@@ -34,7 +34,7 @@ export const ERR_MANIFEST_INVALID = new APIError(400, 'MANIFEST_INVALID', 'manif
 export const ERR_MANIFEST_UNKNOWN = new APIError(-1, 'MANIFEST_UNKNOWN', 'manifest unknown to registry');
 export const ERR_NAME_INVALID = new APIError(-1, 'NAME_INVALID', 'invalid repository name');
 export const ERR_NAME_UNKNOWN = new APIError(-1, 'NAME_UNKNOWN', 'repository name not known to registry');
-export const ERR_SIZE_INVALID = new APIError(400, 'SIZE_INVALID', 'provided length did not match content length');
+export const ERR_SIZE_INVALID = new APIError(416, 'SIZE_INVALID', 'provided length did not match content length');
 export const ERR_UNAUTHORIZED = new APIError(401, 'UNAUTHORIZED', 'authentication required');
 export const ERR_DENIED = new APIError(-1, 'DENIED', 'requested access to the resource is denied');
 export const ERR_UNSUPPORTED = new APIError(-1, 'UNSUPPORTED', 'the operation is unsupported');
@@ -71,7 +71,7 @@ export class ResponseBuilder {
 
 	toResponse(): Response {
 		const headers = new Headers();
-		headers.set("Docker-Distribution-API-Version", "registry/2.0");
+		headers.set('Docker-Distribution-API-Version', 'registry/2.0');
 		if (this.headers != null) {
 			for (const [key, value] of new Headers(this.headers)) {
 				headers.set(key, value);
@@ -87,7 +87,7 @@ export class ResponseBuilder {
 					detail: error.detail,
 				})),
 			});
-			headers.set("Content-Type", "application/json; charset=utf-8");
+			headers.set('Content-Type', 'application/json; charset=utf-8');
 		}
 
 		return new Response(body, {
