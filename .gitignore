@@ -1,3 +1,9 @@
-.idea
-*.lock
+.DS_Store
 /node_modules
+
+**/*.rs.bk
+wasm-pack.log
+
+build/
+/target
+/dist
